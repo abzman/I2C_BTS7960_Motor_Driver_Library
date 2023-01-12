@@ -1,26 +1,17 @@
 /*!
- * @file Adafruit_MotorShield.cpp
- *
- * @mainpage Adafruit FXOS8700 accel/mag sensor driver
+ * @file BTS7960_MotorShield.cpp
  *
  * @section intro_sec Introduction
  *
- * This is the library for the Adafruit Motor Shield V2 for Arduino.
- * It supports DC motors & Stepper motors with microstepping as well
- * as stacking-support. It is *not* compatible with the V1 library!
- * For use with the Motor Shield https://www.adafruit.com/products/1483
- * and Motor FeatherWing https://www.adafruit.com/product/2927
+ * Library for driving BTS7960 Motor Controllers via i2c. 
+ * It supports DC motors & stepper motors with microstepping as well as 
+ * stacking-support.
+ * For use with custom PCBs located here: TBD
  *
  * This shield/wing uses I2C to communicate, 2 pins (SCL+SDA) are required
  * to interface.
  *
- * Adafruit invests time and resources providing this open source code,
- * please support Adafruit and open-source hardware by purchasing
- * products from Adafruit!
- *
- * @section author Author
- *
- * Written by Limor Fried/Ladyada for Adafruit Industries.
+ * Forked and modified from: https://github.com/adafruit/Adafruit_Motor_Shield_V2_Library
  *
  * @section license License
  *
@@ -28,7 +19,7 @@
  *
  */
 
-#include "Adafruit_MotorShield.h"
+#include "BTS7960_MotorShield.h"
 #include "Arduino.h"
 #include <Adafruit_MS_PWMServoDriver.h>
 
@@ -49,7 +40,7 @@ static uint8_t microstepcurve[] = {0,   25,  50,  74,  98,  120, 141, 162, 180,
     @param  addr Optional I2C address if you've changed it
 */
 /**************************************************************************/
-Adafruit_MotorShield::Adafruit_MotorShield(uint8_t addr) { _addr = addr; }
+BTS7960_MotorShield::BTS7960_MotorShield(uint8_t addr) { _addr = addr; }
 
 /**************************************************************************/
 /*!
@@ -63,7 +54,7 @@ Adafruit_MotorShield::Adafruit_MotorShield(uint8_t addr) { _addr = addr; }
     @returns true if successful, false otherwise
 */
 /**************************************************************************/
-bool Adafruit_MotorShield::begin(uint16_t freq, TwoWire *theWire) {
+bool BTS7960_MotorShield::begin(uint16_t freq, TwoWire *theWire) {
   // init PWM w/_freq
   _pwm = Adafruit_MS_PWMServoDriver(_addr);
   if (!_pwm.begin(theWire))
@@ -83,7 +74,7 @@ bool Adafruit_MotorShield::begin(uint16_t freq, TwoWire *theWire) {
    special 'all on' value
 */
 /**************************************************************************/
-void Adafruit_MotorShield::setPWM(uint8_t pin, uint16_t value) {
+void BTS7960_MotorShield::setPWM(uint8_t pin, uint16_t value) {
   if (value > 4095) {
     _pwm.setPWM(pin, 4096, 0);
   } else
@@ -97,7 +88,7 @@ void Adafruit_MotorShield::setPWM(uint8_t pin, uint16_t value) {
     @param  value HIGH or LOW depending on the value you want!
 */
 /**************************************************************************/
-void Adafruit_MotorShield::setPin(uint8_t pin, boolean value) {
+void BTS7960_MotorShield::setPin(uint8_t pin, boolean value) {
   if (value == LOW)
     _pwm.setPWM(pin, 0, 0);
   else
@@ -107,12 +98,12 @@ void Adafruit_MotorShield::setPin(uint8_t pin, boolean value) {
 /**************************************************************************/
 /*!
     @brief  Mini factory that will return a pointer to an already-allocated
-    Adafruit_DCMotor object. Initializes the DC motor and turns off all pins
+    BTS7960_DCMotor object. Initializes the DC motor and turns off all pins
     @param  num The DC motor port we want to use: 1 thru 4 are valid
-    @returns NULL if something went wrong, or a pointer to a Adafruit_DCMotor
+    @returns NULL if something went wrong, or a pointer to a BTS7960_DCMotor
 */
 /**************************************************************************/
-Adafruit_DCMotor *Adafruit_MotorShield::getMotor(uint8_t num) {
+BTS7960_DCMotor *BTS7960_MotorShield::getMotor(uint8_t num) {
   if (num > 4)
     return NULL;
 
@@ -122,32 +113,38 @@ Adafruit_DCMotor *Adafruit_MotorShield::getMotor(uint8_t num) {
     // not init'd yet!
     dcmotors[num].motornum = num;
     dcmotors[num].MC = this;
-    uint8_t pwm, in1, in2;
+    uint8_t fwd, rev, fwde, reve;
     switch (num) {
     case 0:
-      pwm = 8;
-      in2 = 9;
-      in1 = 10;
+      fwd = 10;
+      rev = 13;
+      fwde = 11;
+      reve = 12;
       break;
     case 1:
-      pwm = 13;
-      in2 = 12;
-      in1 = 11;
+      fwd = 15;
+      rev = 8;
+      fwde = 14;
+      reve = 9;
       break;
     case 2:
-      pwm = 2;
-      in2 = 3;
-      in1 = 4;
+      fwd = 6;
+      rev = 1;
+      fwde = 7;
+      reve = 0;
       break;
     default:
-      pwm = 7;
-      in2 = 6;
-      in1 = 5;
+      fwd = 3;
+      rev = 4;
+      fwde = 2;
+      reve = 5;
       break;
     }
-    dcmotors[num].PWMpin = pwm;
-    dcmotors[num].IN1pin = in1;
-    dcmotors[num].IN2pin = in2;
+    dcmotors[num].PWMpin = fwd; //default value is forward
+    dcmotors[num].FWDpin = fwd;
+    dcmotors[num].REVpin = rev;
+    dcmotors[num].FWDEpin = fwde;
+    dcmotors[num].REVEpin = reve;
   }
   return &dcmotors[num];
 }
@@ -155,15 +152,15 @@ Adafruit_DCMotor *Adafruit_MotorShield::getMotor(uint8_t num) {
 /**************************************************************************/
 /*!
     @brief  Mini factory that will return a pointer to an already-allocated
-    Adafruit_StepperMotor object with a given 'steps per rotation.
+    BTS7960_StepperMotor object with a given 'steps per rotation.
     Then initializes the stepper motor and turns off all pins.
     @param  steps How many steps per revolution (used for RPM calculation)
     @param  num The stepper motor port we want to use: only 1 or 2 are valid
     @returns NULL if something went wrong, or a pointer to a
-   Adafruit_StepperMotor
+   BTS7960_StepperMotor
 */
 /**************************************************************************/
-Adafruit_StepperMotor *Adafruit_MotorShield::getStepper(uint16_t steps,
+BTS7960_StepperMotor *BTS7960_MotorShield::getStepper(uint16_t steps,
                                                         uint8_t num) {
   if (num > 2)
     return NULL;
@@ -175,28 +172,34 @@ Adafruit_StepperMotor *Adafruit_MotorShield::getStepper(uint16_t steps,
     steppers[num].steppernum = num;
     steppers[num].revsteps = steps;
     steppers[num].MC = this;
-    uint8_t pwma, pwmb, ain1, ain2, bin1, bin2;
+    uint8_t fwdA, revA, fwdeA, reveA, fwdB, revB, fwdeB, reveB;
     if (num == 0) {
-      pwma = 8;
-      ain2 = 9;
-      ain1 = 10;
-      pwmb = 13;
-      bin2 = 12;
-      bin1 = 11;
+      fwdA = 10;
+      revA = 13;
+      fwdeA = 11;
+      reveA = 12;
+      fwdB = 15;
+      revB = 8;
+      fwdeB = 14;
+      reveB = 9;
     } else {
-      pwma = 2;
-      ain2 = 3;
-      ain1 = 4;
-      pwmb = 7;
-      bin2 = 6;
-      bin1 = 5;
+      fwdA = 6;
+      revA = 1;
+      fwdeA = 7;
+      reveA = 0;
+      fwdB = 3;
+      revB = 4;
+      fwdeB = 2;
+      reveB = 5;
     }
-    steppers[num].PWMApin = pwma;
-    steppers[num].PWMBpin = pwmb;
-    steppers[num].AIN1pin = ain1;
-    steppers[num].AIN2pin = ain2;
-    steppers[num].BIN1pin = bin1;
-    steppers[num].BIN2pin = bin2;
+    steppers[num].FWDpinA = fwdA;
+    steppers[num].REVpinA = revA;
+    steppers[num].FWDEpinA = fwdeA;
+    steppers[num].REVEpinA = reveA;
+    steppers[num].FWDpinB = fwdB;
+    steppers[num].REVpinB = revB;
+    steppers[num].FWDEpinB = fwdeB;
+    steppers[num].REVEpinB = reveB;
   }
   return &steppers[num];
 }
@@ -208,14 +211,14 @@ Adafruit_StepperMotor *Adafruit_MotorShield::getStepper(uint16_t steps,
 /**************************************************************************/
 /*!
     @brief  Create a DCMotor object, un-initialized!
-    You should never call this, instead have the {@link Adafruit_MotorShield}
-    give you a DCMotor object with {@link Adafruit_MotorShield.getMotor}
+    You should never call this, instead have the {@link BTS7960_MotorShield}
+    give you a DCMotor object with {@link BTS7960_MotorShield.getMotor}
 */
 /**************************************************************************/
-Adafruit_DCMotor::Adafruit_DCMotor(void) {
+BTS7960_DCMotor::BTS7960_DCMotor(void) {
   MC = NULL;
   motornum = 0;
-  PWMpin = IN1pin = IN2pin = 0;
+  FWDpin = REVpin = FWDEpin = REVEpin = PWMpin = 0;
 }
 
 /**************************************************************************/
@@ -224,19 +227,30 @@ Adafruit_DCMotor::Adafruit_DCMotor(void) {
     @param  cmd The action to perform, can be FORWARD, BACKWARD or RELEASE
 */
 /**************************************************************************/
-void Adafruit_DCMotor::run(uint8_t cmd) {
+void BTS7960_DCMotor::run(uint8_t cmd) {
   switch (cmd) {
   case FORWARD:
-    MC->setPin(IN2pin, LOW); // take low first to avoid 'break'
-    MC->setPin(IN1pin, HIGH);
+    MC->setPin(REVpin, LOW); //stop previous movement
+    PWMpin = FWDpin; //set up for speed definition
+    MC->setPin(FWDEpin, HIGH);
+    MC->setPin(REVEpin, HIGH);
     break;
   case BACKWARD:
-    MC->setPin(IN1pin, LOW); // take low first to avoid 'break'
-    MC->setPin(IN2pin, HIGH);
+    MC->setPin(FWDpin, LOW); //stop previous movement
+    PWMpin = REVpin; //set up for speed definition
+    MC->setPin(FWDEpin, HIGH);
+    MC->setPin(REVEpin, HIGH);
     break;
   case RELEASE:
-    MC->setPin(IN1pin, LOW);
-    MC->setPin(IN2pin, LOW);
+    MC->setPin(FWDEpin, LOW);
+    MC->setPin(REVEpin, LOW);
+    break;
+  case BRAKE:
+    //connect both sides of motor to ground
+    MC->setPin(FWDpin, LOW);
+    MC->setPin(REVpin, LOW);
+    MC->setPin(FWDEpin, HIGH);
+    MC->setPin(REVEpin, HIGH);
     break;
   }
 }
@@ -247,7 +261,7 @@ void Adafruit_DCMotor::run(uint8_t cmd) {
     @param  speed The 8-bit PWM value, 0 is off, 255 is on
 */
 /**************************************************************************/
-void Adafruit_DCMotor::setSpeed(uint8_t speed) {
+void BTS7960_DCMotor::setSpeed(uint8_t speed) {
   MC->setPWM(PWMpin, speed * 16);
 }
 
@@ -257,7 +271,7 @@ void Adafruit_DCMotor::setSpeed(uint8_t speed) {
     @param  speed The 12-bit PWM value, 0 (full off) to 4095 (full on)
 */
 /**************************************************************************/
-void Adafruit_DCMotor::setSpeedFine(uint16_t speed) {
+void BTS7960_DCMotor::setSpeedFine(uint16_t speed) {
   MC->setPWM(PWMpin, speed > 4095 ? 4095 : speed);
 }
 
@@ -266,14 +280,14 @@ void Adafruit_DCMotor::setSpeedFine(uint16_t speed) {
     @brief  Set DC motor to full on.
 */
 /**************************************************************************/
-void Adafruit_DCMotor::fullOn() { MC->_pwm.setPWM(PWMpin, 4096, 0); }
+void BTS7960_DCMotor::fullOn() { MC->_pwm.setPWM(PWMpin, 4096, 0); }
 
 /**************************************************************************/
 /*!
     @brief  Set DC motor to full off.
 */
 /**************************************************************************/
-void Adafruit_DCMotor::fullOff() { MC->_pwm.setPWM(PWMpin, 0, 4096); }
+void BTS7960_DCMotor::fullOff() { MC->_pwm.setPWM(PWMpin, 0, 4096); }
 
 /******************************************
                STEPPERS
@@ -282,11 +296,11 @@ void Adafruit_DCMotor::fullOff() { MC->_pwm.setPWM(PWMpin, 0, 4096); }
 /**************************************************************************/
 /*!
     @brief  Create a StepperMotor object, un-initialized!
-    You should never call this, instead have the {@link Adafruit_MotorShield}
-    give you a StepperMotor object with {@link Adafruit_MotorShield.getStepper}
+    You should never call this, instead have the {@link BTS7960_MotorShield}
+    give you a StepperMotor object with {@link BTS7960_MotorShield.getStepper}
 */
 /**************************************************************************/
-Adafruit_StepperMotor::Adafruit_StepperMotor(void) {
+BTS7960_StepperMotor::BTS7960_StepperMotor(void) {
   revsteps = steppernum = currentstep = 0;
 }
 
@@ -296,7 +310,7 @@ Adafruit_StepperMotor::Adafruit_StepperMotor(void) {
     @param  rpm The desired RPM, we will do our best to reach it!
 */
 /**************************************************************************/
-void Adafruit_StepperMotor::setSpeed(uint16_t rpm) {
+void BTS7960_StepperMotor::setSpeed(uint16_t rpm) {
   // Serial.println("steps per rev: "); Serial.println(revsteps);
   // Serial.println("RPM: "); Serial.println(rpm);
 
@@ -308,27 +322,29 @@ void Adafruit_StepperMotor::setSpeed(uint16_t rpm) {
     @brief  Release all pins of the stepper motor so it free-spins
 */
 /**************************************************************************/
-void Adafruit_StepperMotor::release(void) {
-  MC->setPin(AIN1pin, LOW);
-  MC->setPin(AIN2pin, LOW);
-  MC->setPin(BIN1pin, LOW);
-  MC->setPin(BIN2pin, LOW);
-  MC->setPWM(PWMApin, 0);
-  MC->setPWM(PWMBpin, 0);
+void BTS7960_StepperMotor::release(void) {
+  MC->setPin(FWDpinA, LOW);
+  MC->setPin(REVpinA, LOW);
+  MC->setPin(FWDEpinA, LOW);
+  MC->setPin(REVEpinA, LOW);
+  MC->setPin(FWDpinB, LOW);
+  MC->setPin(REVpinB, LOW);
+  MC->setPin(FWDEpinB, LOW);
+  MC->setPin(REVEpinB, LOW);
 }
 
 /**************************************************************************/
 /*!
     @brief  Move the stepper motor with the given RPM speed, don't forget to
    call
-    {@link Adafruit_StepperMotor.setSpeed} to set the speed!
+    {@link BTS7960_StepperMotor.setSpeed} to set the speed!
     @param  steps The number of steps we want to move
     @param  dir The direction to go, can be FORWARD or BACKWARD
     @param  style How to perform each step, can be SINGLE, DOUBLE, INTERLEAVE or
    MICROSTEP
 */
 /**************************************************************************/
-void Adafruit_StepperMotor::step(uint16_t steps, uint8_t dir, uint8_t style) {
+void BTS7960_StepperMotor::step(uint16_t steps, uint8_t dir, uint8_t style) {
   uint32_t uspers = usperstep;
 
   if (style == INTERLEAVE) {
@@ -359,11 +375,11 @@ void Adafruit_StepperMotor::step(uint16_t steps, uint8_t dir, uint8_t style) {
     @param  style How to perform each step, can be SINGLE, DOUBLE, INTERLEAVE or
    MICROSTEP
     @returns The current step/microstep index, useful for
-   Adafruit_StepperMotor.step to keep track of the current location, especially
+   BTS7960_StepperMotor.step to keep track of the current location, especially
    when microstepping
 */
 /**************************************************************************/
-uint8_t Adafruit_StepperMotor::onestep(uint8_t dir, uint8_t style) {
+uint8_t BTS7960_StepperMotor::onestep(uint8_t dir, uint8_t style) {
   uint8_t ocrb, ocra;
 
   ocra = ocrb = 255;
@@ -445,8 +461,8 @@ uint8_t Adafruit_StepperMotor::onestep(uint8_t dir, uint8_t style) {
   Serial.print(" pwmB = ");
   Serial.println(ocrb, DEC);
 #endif
-  MC->setPWM(PWMApin, ocra * 16);
-  MC->setPWM(PWMBpin, ocrb * 16);
+  //MC->setPWM(PWMApin, ocra * 16);
+  //MC->setPWM(PWMBpin, ocrb * 16);
 
   // release all
   uint8_t latch_state = 0; // all motor pins to 0
@@ -493,31 +509,39 @@ uint8_t Adafruit_StepperMotor::onestep(uint8_t dir, uint8_t style) {
   Serial.print("Latch: 0x");
   Serial.println(latch_state, HEX);
 #endif
-
+//TODO fix stepper motor code
   if (latch_state & 0x1) {
     // Serial.println(AIN2pin);
-    MC->setPin(AIN2pin, HIGH);
+    MC->setPWM(REVpinA, ocra * 16);
+    //MC->setPin(FWDpinA, LOW);
   } else {
-    MC->setPin(AIN2pin, LOW);
+    MC->setPin(REVpinA, LOW);
   }
   if (latch_state & 0x2) {
-    MC->setPin(BIN1pin, HIGH);
     // Serial.println(BIN1pin);
+    MC->setPWM(FWDpinB, ocrb * 16);
+    //MC->setPin(REVpinB, LOW);
   } else {
-    MC->setPin(BIN1pin, LOW);
+    MC->setPin(FWDpinB, LOW);
   }
   if (latch_state & 0x4) {
-    MC->setPin(AIN1pin, HIGH);
     // Serial.println(AIN1pin);
+    MC->setPWM(FWDpinA, ocra * 16);
+    //MC->setPin(REVpinA, LOW);
   } else {
-    MC->setPin(AIN1pin, LOW);
+    MC->setPin(FWDpinA, LOW);
   }
   if (latch_state & 0x8) {
-    MC->setPin(BIN2pin, HIGH);
     // Serial.println(BIN2pin);
+    MC->setPWM(REVpinB, ocrb * 16);
+    //MC->setPin(FWDpinB, LOW);
   } else {
-    MC->setPin(BIN2pin, LOW);
+    MC->setPin(REVpinB, LOW);
   }
 
+  MC->setPin(FWDEpinA, HIGH);
+  MC->setPin(REVEpinA, HIGH);
+  MC->setPin(FWDEpinB, HIGH);
+  MC->setPin(REVEpinB, HIGH);
   return currentstep;
 }
