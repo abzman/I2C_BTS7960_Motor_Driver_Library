@@ -6,9 +6,9 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-Adafruit_MotorShield	KEYWORD1
-Adafruit_DCMotor	KEYWORD1
-Adafruit_StepperMotor	KEYWORD1
+BTS7960_MotorShield	KEYWORD1
+BTS7960_DCMotor	KEYWORD1
+BTS7960_StepperMotor	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)

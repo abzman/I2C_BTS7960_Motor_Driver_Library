@@ -1,21 +1,20 @@
 /******************************************************************
- This is the library for the Adafruit Motor Shield V2 for Arduino.
- It supports DC motors & Stepper motors with microstepping as well
- as stacking-support. It is *not* compatible with the V1 library!
+ Library for driving BTS7960 Motor Controllers via i2c. It supports
+ DC motors & stepper motors with microstepping as well as 
+ stacking-support.
 
- It will only work with https://www.adafruit.com/products/1483
+ For use with custom PCBs located here: TBD
 
- Adafruit invests time and resources providing this open
- source code, please support Adafruit and open-source hardware
- by purchasing products from Adafruit!
+ Forked and modified from: 
+ https://github.com/adafruit/Adafruit_Motor_Shield_V2_Library
 
  Written by Limor Fried/Ladyada for Adafruit Industries.
  BSD license, check license.txt for more information.
  All text above must be included in any redistribution.
  ******************************************************************/
 
-#ifndef _Adafruit_MotorShield_h_
-#define _Adafruit_MotorShield_h_
+#ifndef _BTS7960_MotorShield_h_
+#define _BTS7960_MotorShield_h_
 
 #include "utility/Adafruit_MS_PWMServoDriver.h"
 #include <inttypes.h>
@@ -43,13 +42,13 @@
 #define INTERLEAVE 3
 #define MICROSTEP 4
 
-class Adafruit_MotorShield;
+class BTS7960_MotorShield;
 
 /** Object that controls and keeps state for a single DC motor */
-class Adafruit_DCMotor {
+class BTS7960_DCMotor {
 public:
-  Adafruit_DCMotor(void);
-  friend class Adafruit_MotorShield; ///< Let MotorShield create DCMotors
+  BTS7960_DCMotor(void);
+  friend class BTS7960_MotorShield; ///< Let MotorShield create DCMotors
   void run(uint8_t);
   void setSpeed(uint8_t);
   void setSpeedFine(uint16_t speed);
@@ -57,45 +56,47 @@ public:
   void fullOff();
 
 private:
-  uint8_t PWMpin, IN1pin, IN2pin;
-  Adafruit_MotorShield *MC;
+  uint8_t FWDpin, REVpin, FWDEpin, REVEpin, PWMpin;
+  BTS7960_MotorShield *MC;
   uint8_t motornum;
 };
 
 /** Object that controls and keeps state for a single stepper motor */
-class Adafruit_StepperMotor {
+
+class BTS7960_StepperMotor {
 public:
-  Adafruit_StepperMotor(void);
+  BTS7960_StepperMotor(void);
   void setSpeed(uint16_t);
 
   void step(uint16_t steps, uint8_t dir, uint8_t style = SINGLE);
   uint8_t onestep(uint8_t dir, uint8_t style);
   void release(void);
 
-  friend class Adafruit_MotorShield; ///< Let MotorShield create StepperMotors
+  friend class BTS7960_MotorShield; ///< Let MotorShield create StepperMotors
 
 private:
   uint32_t usperstep;
 
-  uint8_t PWMApin, AIN1pin, AIN2pin;
-  uint8_t PWMBpin, BIN1pin, BIN2pin;
+  uint8_t FWDpinA, REVpinA, FWDEpinA, REVEpinA;
+  uint8_t FWDpinB, REVpinB, FWDEpinB, REVEpinB;
   uint16_t revsteps; // # steps per revolution
   uint8_t currentstep;
-  Adafruit_MotorShield *MC;
+  BTS7960_MotorShield *MC;
   uint8_t steppernum;
 };
 
+
 /** Object that controls and keeps state for the whole motor shield.
     Use it to create DC and Stepper motor objects! */
-class Adafruit_MotorShield {
+class BTS7960_MotorShield {
 public:
-  Adafruit_MotorShield(uint8_t addr = 0x60);
+  BTS7960_MotorShield(uint8_t addr = 0x60);
 
   bool begin(uint16_t freq = 1600, TwoWire *theWire = &Wire);
-  Adafruit_DCMotor *getMotor(uint8_t n);
-  Adafruit_StepperMotor *getStepper(uint16_t steps, uint8_t n);
+  BTS7960_DCMotor *getMotor(uint8_t n);
+  BTS7960_StepperMotor *getStepper(uint16_t steps, uint8_t n);
 
-  friend class Adafruit_DCMotor; ///< Let DCMotors control the Shield
+  friend class BTS7960_DCMotor; ///< Let DCMotors control the Shield
 
   void setPWM(uint8_t pin, uint16_t val);
   void setPin(uint8_t pin, boolean val);
@@ -103,8 +104,8 @@ public:
 private:
   uint8_t _addr;
   uint16_t _freq;
-  Adafruit_DCMotor dcmotors[4];
-  Adafruit_StepperMotor steppers[2];
+  BTS7960_DCMotor dcmotors[4];
+  BTS7960_StepperMotor steppers[2];
   Adafruit_MS_PWMServoDriver _pwm;
 };
 
