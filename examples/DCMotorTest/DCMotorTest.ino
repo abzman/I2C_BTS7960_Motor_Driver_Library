@@ -7,20 +7,21 @@ For use with the Adafruit Motor Shield v2
 ---->	http://www.adafruit.com/products/1438
 */
 
-#include <Adafruit_MotorShield.h>
+#include <BTS7960_MotorShield.h>
 
 // Create the motor shield object with the default I2C address
-Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+BTS7960_MotorShield AFMS = BTS7960_MotorShield();
 // Or, create it with a different I2C address (say for stacking)
 // Adafruit_MotorShield AFMS = Adafruit_MotorShield(0x61);
 
 // Select which 'port' M1, M2, M3 or M4. In this case, M1
-Adafruit_DCMotor *myMotor = AFMS.getMotor(1);
+BTS7960_DCMotor *myMotor = AFMS.getMotor(1);
 // You can also make another motor on port M2
 //Adafruit_DCMotor *myOtherMotor = AFMS.getMotor(2);
 
 void setup() {
-  Serial.begin(9600);           // set up Serial library at 9600 bps
+  Serial.begin(115200);           // set up Serial library at 9600 bps
+  delay(3000);
   Serial.println("Adafruit Motorshield v2 - DC Motor test!");
 
   if (!AFMS.begin()) {         // create with the default frequency 1.6KHz
